@@ -52,10 +52,10 @@ pub fn generate_loader(map: &FeaturesMap) -> Result<()> {
 }
 
 fn auto_generate_stub(path: &str) -> Result<()> {
-    let full_path = format!("src/{}.rs", path.replace("::", "/"));
-    let file_path = Path::new(&full_path);
+    let file_path = Path::new("src").join(path.replace("::", "/" + "rs"));
 
     if file_path.exists() {
+        println!("[+] Skipping, stub, file already exists: {}", file_path.display());
         return Ok(()); // Don't overwrite existing files
     }
 
