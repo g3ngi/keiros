@@ -52,7 +52,7 @@ pub fn generate_loader(map: &FeaturesMap) -> Result<()> {
 }
 
 fn auto_generate_stub(path: &str) -> Result<()> {
-    let file_path = Path::new("src").join(path.replace("::", "/" + "rs"));
+    let file_path = Path::new("src").join(path.replace("::", "/") + "rs");
 
     if file_path.exists() {
         println!("[+] Skipping, stub, file already exists: {}", file_path.display());
@@ -63,12 +63,12 @@ fn auto_generate_stub(path: &str) -> Result<()> {
         fs::create_dir_all(parent)?;
     }
 
-    let mut file = File::create(file_path)?;
+    let mut file = File::create(&file_path)?;
     writeln!(file, "// AUTO-GENERATED MODULE STUB")?;
     writeln!(file, "pub fn init() {{")?;
     writeln!(file, "    println!(\"{}::init() called\");", path)?;
     writeln!(file, "}}")?;
 
-    println!("[+] Created stub: {}", full_path);
+    println!("[+] Created stub: {}", file_path.to_string_lossy());
     Ok(())
 }
