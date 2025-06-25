@@ -15,3 +15,6 @@ pub mod patcher;
 
 #[path = "lib/profile.rs"]
 pub mod profile;
+
+#[path = "lib/feature_map_gen.rs"]
+pub mod feature_map_gen;
