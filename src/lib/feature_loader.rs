@@ -30,43 +30,34 @@ pub fn generate_loader(map: &FeaturesMap) -> Result<()> {
     writeln!(loader_file, "pub fn init_features() {{")?;
 
     for (feature_name, entry) in &map.0 {
-        let trimmed_path = entry.path.trim();
-
-        match &entry.call {
-            Some(call) => {
-                writeln!(
-                    loader_file,
-                    "    #[cfg(feature = \"{0}\")]",
-                    feature_name
-                )?;
-                writeln!(
-                    loader_file,
-                    "    {{ crate::{0}::{1}(); }}",
-                    trimmed_path, call
-                )?;
-            }
-            None => {
-                writeln!(
-                    loader_file,
-                    "    #[cfg(feature = \"{0}\")]",
-                    feature_name
-                )?;
-                writeln!(
-                    loader_file,
-                    "    // crate::{} - no call method specified (skipped)",
-                    trimmed_path
-                )?;
-            }
+        if let Some(call) = &entry.call {
+            writeln!(
+                loader_file,
+                "    #[cfg(feature = \"{0}\")]\n    {{ crate::{1}::{2}(); }}",
+                feature_name,
+                entry.path.trim(),
+                call.trim()
+            )?;
+        } else {
+            writeln!(
+                loader_file,
+                "    #[cfg(feature = \"{0}\")]\n    // crate::{1} - skipped (no `call:`)",
+                feature_name,
+                entry.path.trim()
+            )?;
         }
 
-        // auto_generate_stub(trimmed_path)?;
+        // Optional: Only auto-generate stub if `call` is Some
+        // if entry.call.is_some() {
+        //     auto_generate_stub(entry.path.trim())?;
+        // }
     }
-
 
     writeln!(loader_file, "}}")?;
     println!("[+] Regenerated feature_loader.rs with {} feature(s)", map.0.len());
     Ok(())
 }
+
 
 fn auto_generate_stub(path: &str) -> Result<()> {
     let file_path = Path::new("src").join(path.replace("::", "/") + ".rs");
