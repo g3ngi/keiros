@@ -59,7 +59,7 @@ pub fn generate_loader(map: &FeaturesMap) -> Result<()> {
             }
         }
 
-        auto_generate_stub(trimmed_path)?;
+        // auto_generate_stub(trimmed_path)?;
     }
 
 
@@ -69,7 +69,7 @@ pub fn generate_loader(map: &FeaturesMap) -> Result<()> {
 }
 
 fn auto_generate_stub(path: &str) -> Result<()> {
-    let file_path = Path::new("src").join(path.replace("::", "/") + "rs");
+    let file_path = Path::new("src").join(path.replace("::", "/") + ".rs");
 
     if file_path.exists() {
         println!("[+] Skipping, stub, file already exists: {}", file_path.display());
