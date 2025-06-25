@@ -86,7 +86,7 @@ fn main() -> Result<()> {
         Commands::Clean { all, dry_run, keep } => handle_clean(all, dry_run, keep)?,
 
         Commands::Generate => {
-            let feature_map = read_feature_map(Path::new("features_map.yml"))?;
+            let feature_map = read_feature_map(Path::new("feature_map.yml"))?;
             generate_loader(&feature_map)?;
         }
 
