@@ -30,14 +30,13 @@ cargo build --release
 
 ###  Initialize a New Agent Project
 ```
-./keiros init --project client --listener http
+./keiros init --agent-name "IcyBear"
 ```
-- ```--project```: Name of the new binary Cargo project (e.g., client)
--``` --listener```: Communication handler to include (http or socket)
+- ```--agent-name```: Name of the new binary Cargo project (e.g., client)
 
 ### Create a New Feature
 ```
-./keiros feature new --name execute
+./keiros feature new --name "pivot module"
 ```
 Creates src/features/execute.rs and registers it in mod.rs.
 
@@ -57,5 +56,9 @@ enabled_features:
 
 ### Build the Agent
 ```
-./keiros build --profile linux_agent
+./keiros build --profile linux_agent --teamserver-ip <your_c2_ip> --listener-port <your_c2_Lport>
+
 ```
+- ```--profile```: build configuration for the binary
+- ```--teamserver-ip```: your C2 ip address for comms
+- ```--listener-port```: your C2 listener port for comms
