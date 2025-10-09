@@ -23,7 +23,7 @@ Keiros is a modular **red team agent framework** built in Rust, designed for use
 ```bash
 git clone https://github.com/your-org/keiros.git
 cd keiros
-cargo build --release
+cargo install --path .
 ```
 
 ## Usage
