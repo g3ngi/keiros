@@ -96,14 +96,6 @@ MyAgent/
 ### `keiros feature new --name pivot` (legacy flow)
 - Adds `src/features/pivot.rs` with a stub `init()`/`execute()` implementation.
 - Appends export/registration lines into `src/features/mod.rs`.
-
-### `keiros feature-map generate`
-- Scans `src/features/*.rs` and writes `feature_map.yml` (name → path, suggested hooks).
-
-### `keiros loader generate`
-- Produces/updates `src/feature_loader.rs` to call each feature’s `init()` (or module’s registration entry) at startup.
-- Can optionally create stubs for missing entries.
-
 ---
 
 ## Getting Started
