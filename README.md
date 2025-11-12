@@ -171,12 +171,6 @@ keiros clean --all           # be aggressive (remove all keiros-* images)
 keiros clean --keep base,ci  # keep images prefixed with base or ci
 ```
 
-### 7) Smoke-test with a tiny stub C2
-Use the ready-made doc and snippets:
-
-- **Python (Flask)** and **Node.js (Express)** stubs implementing `/register`, `/poll`, `/report`, plus `/task` for operators.  
-- See: `docs/stubs/http_stub.md`
-
 ---
 
 ## Command Reference
