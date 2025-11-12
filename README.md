@@ -148,14 +148,7 @@ keiros feature new --name pivot
 # Generates src/features/pivot.rs and wires it into features/mod.rs
 ```
 
-### 4) (Optional) Auto-map features and generate a loader
-```bash
-keiros feature-map generate
-keiros loader generate
-# Produces feature_map.yml and src/feature_loader.rs
-```
-
-### 5) Build (Dockerized)
+### 4) Build (Dockerized)
 ```bash
 keiros build   --profile linux_http   --teamserver-ip 127.0.0.1   --listener-port 8080
 ```
@@ -163,7 +156,7 @@ keiros build   --profile linux_http   --teamserver-ip 127.0.0.1   --listener-por
 - `--profile` — name or path in `build_profiles/`  
 - `--teamserver-ip`, `--listener-port` — compiled into the agent’s comms config (used by HTTP/socket backends)
 
-### 6) Clean generated images/artifacts
+### 5) Clean generated images/artifacts
 ```bash
 keiros clean                 # remove Keiros build images & artifacts
 keiros clean --dry-run       # show what would be removed
