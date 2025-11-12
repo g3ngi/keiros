@@ -12,156 +12,210 @@ Keiros is a modular **red team agent framework** built in Rust, designed for use
 
 ## Why Keiros?
 
-- **Rust-first safety & performance**  
-  Memory-safety by default, strong type system, and zero-cost abstractions reduce entire classes of defects while keeping runtime overhead low.
-
-- **Composable, profile-driven builds**  
-  A **declarative profile** enables repeatable, auditable builds: toggle modules, targets, and optimizations without hand-editing scattered configs.
-
-- **Module-based architecture (next-gen)**  
-  Clear boundaries between **comms**, **tasks**, and **capabilities** make it easier to extend, test, or replace components without forking the world.
-
-- **Cross-platform, cross-toolchain**  
-  Portable Rust + Dockerized cross-compilation (e.g., musl) helps target Linux and Windows from a consistent, reproducible build environment.
-
-- **Operational ergonomics**  
-  Opinionated CLI for common workflows (init, build, profile selection), minimizing glue code and shortening the loop from idea → implant.
-
-- **Security-by-design defaults**  
-  Minimal dependencies, feature-gated logging/telemetry, and explicit opt-in for risky functionality help avoid accidental operational exposure.
-
-- **Teamserver-agnostic**  
-  Keiros focuses on the **agent** layer. You can integrate it with your existing C2 backends and pipelines without being locked into a single stack.
+- **Rust-first safety & performance** — memory safety by default and low overhead.  
+- **Composable, profile-driven builds** — repeatable, auditable outputs via YAML.  
+- **Module-based architecture (next-gen)** — clear boundaries between comms, tasks, and capabilities.  
+- **Cross-platform, cross-toolchain** — Dockerized builds for Linux & Windows.  
+- **Operational ergonomics** — opinionated CLI (init, build, clean, profile selection).  
+- **Security-by-design defaults** — explicit opt-in for risky functionality.  
+- **Teamserver-agnostic** — integrate with any C2 backend without lock-in.
 
 ---
 
 ## What is an Agent?
 
-In Keiros, an **agent** is an (authorized) adversary-simulation component that runs on a target host and communicates with your C2. Conceptually, it is a **malicious program used for legitimate testing** with the following core behaviors:
+In Keiros, an **agent** is an (authorized) adversary-simulation component that runs on a target host and communicates with your C2. Conceptually, it is a **malicious program used for legitimate testing** with core behaviors:
 
-- **Self-registration**  
-  On first contact, the agent registers its **ID**, **IP**, **hostname**, **status**, and **communication protocol** with the C2.
-- **Command polling**  
-  It periodically **polls** for tasks (or receives them, depending on comms strategy).
-- **Task execution**  
-  It **executes** assigned tasks (capabilities provided by enabled modules) and **reports results** back to the C2.
+- **Self-registration** — sends **ID**, **IP**, **hostname**, **status**, **protocol**.  
+- **Command polling** — periodically polls (or receives) tasks from the C2.  
+- **Task execution** — runs enabled module capabilities and reports results back.
 
-> Note: The exact data model and cadence depend on your enabled modules and profile (e.g., HTTP vs. socket, beacon intervals, jitter, etc.).
+> The exact model and cadence depend on your enabled modules and profile (e.g., HTTP vs. socket, beacon intervals, jitter).
 
 ---
 
 ## Features
 
-- Modular architecture using Cargo features (transitioning to a full **module-based** system)
-- Linux and Windows cross-compilation support via Docker
-- Multiple communication handlers (HTTP, socket)
-- Dynamic capability registration and initialization
-- CLI tooling to speed up agent development and builds
+- Modular architecture using Cargo features (transitioning to a full **module-based** system)  
+- Linux and Windows cross-compilation support via Docker  
+- Multiple communication handlers (HTTP, socket)  
+- Dynamic capability registration and initialization  
+- CLI tooling to speed up agent development and builds (`init`, `build`, `clean`, etc.)
+
+---
+
+## Project Scaffold (What `keiros init` Generates)
+
+Below is the **typical tree** of a new agent project after running `keiros init --agent-name MyAgent` and adding one legacy feature plus a loader.
+
+```
+MyAgent/
+├─ Cargo.toml
+├─ .gitignore
+├─ build_profiles/
+│  ├─ linux_http.yaml        # Example profile (musl, http comms)
+│  └─ windows_http.yaml      # Example profile for Windows target
+├─ Dockerfile                # Builder image used by `keiros build`
+├─ feature_map.yml           # Auto-generated map of discovered features (optional)
+├─ src/
+│  ├─ main.rs                # Entry point: wires comms + loader + run loop
+│  ├─ feature_loader.rs      # Generated: calls each feature's init()/register
+│  ├─ comms/
+│  │  ├─ mod.rs              # Comms trait and shared types
+│  │  ├─ http.rs             # HTTP beacon/poll implementation (if enabled)
+│  │  └─ socket.rs           # Socket-based comms (if enabled)
+│  └─ features/
+│     ├─ mod.rs              # Registry of features (legacy)
+│     ├─ execute.rs          # Example feature (legacy capability)
+│     └─ pivot.rs            # Example generated by `keiros feature new --name pivot`
+└─ README.md
+```
+
+### File/Folder Breakdown (Plain English)
+
+- **Cargo.toml** — Project config: package name, dependencies, build settings.  
+- **build_profiles/** — YAML files that tell `keiros build` *what* to build (target, release/strip, which features/modules).  
+- **Dockerfile** / **.dockerignore** — Reproducible Docker build setup; keeps builds consistent across machines.  
+- **feature_map.yml** — *(Optional)* Auto-generated list of found features for the loader.  
+- **src/main.rs** — Program entry point. Starts comms and runs the agent loop.  
+- **src/feature_loader.rs** — Auto-generated initializer that registers/loads your features (or future modules).  
+- **src/comms/** — How the agent talks to the C2: `http.rs`, `socket.rs`. `mod.rs` holds shared types/traits.  
+- **src/features/** — *(Legacy)* Individual capabilities. `mod.rs` lists them. Example: `execute.rs`, `pivot.rs`.  
+- **README.md** — Your project’s docs (what this file is).
+
+> **During the module-based migration**, `features/` will evolve into `modules/` with clearer boundaries and explicit capability traits. The loader generator will target modules instead of legacy features.
+
+---
+
+## Generated Files by Command
+
+### `keiros init --agent-name MyAgent`
+- Creates the Cargo bin, `Dockerfile`, base `build_profiles/`, and a minimal `src/` skeleton.
+- May add `.cargo/config.toml` (for cross) and `.gitignore`.
+
+### `keiros feature new --name pivot` (legacy flow)
+- Adds `src/features/pivot.rs` with a stub `init()`/`execute()` implementation.
+- Appends export/registration lines into `src/features/mod.rs`.
+
+### `keiros feature-map generate`
+- Scans `src/features/*.rs` and writes `feature_map.yml` (name → path, suggested hooks).
+
+### `keiros loader generate`
+- Produces/updates `src/feature_loader.rs` to call each feature’s `init()` (or module’s registration entry) at startup.
+- Can optionally create stubs for missing entries.
 
 ---
 
 ## Getting Started
 
 ### Prerequisites
-
-- [Docker](https://www.docker.com/)
-- [Rust](https://www.rust-lang.org/)
+- Docker (daemon running)  
+- Rust toolchain (`rustup` recommended)  
 - Git
 
 ### Install
-
 ```bash
 git clone https://github.com/your-org/keiros.git
 cd keiros
 cargo install --path .
+# Provides the `keiros` CLI
 ```
 
 ---
 
-## Usage (Quickstart)
+## Usage (New-User Friendly Quickstart)
 
-### 0) Terms you’ll see
-- **Profile**: a YAML file that declares target, release/strip, and which modules/comms are enabled.
-- **Teamserver IP / Listener port**: where the agent will register and poll commands (your C2 endpoint).
+### 0) Glossary
+- **Profile** — YAML file describing the build: target triple, release/strip flags, enabled modules/features.  
+- **Teamserver IP / Listener port** — your C2 endpoint where agents register & poll.
 
-### 1) Initialize an agent
+### 1) Scaffold a minimal agent
 ```bash
-./keiros init --agent-name IcyBear
-# Creates a new Cargo bin with a minimal agent skeleton
+keiros init --agent-name MyAgent
+# Creates a new Cargo bin with a minimal agent skeleton and a Dockerfile for building.
 ```
 
-### 2) Pick/adjust a build profile
+### 2) Create/adjust a build profile
 Create `build_profiles/linux_http.yaml`:
 ```yaml
 name: linux_http
 target: x86_64-unknown-linux-musl
 release: true
 strip: true
-enabled_features:    # legacy naming; migrating to modules
+enabled_features:        # legacy naming; migrating to modules
   - register_agent
   - execute
   - http
 ```
 
-> Tip: For Windows, set `target: x86_64-pc-windows-gnu` (or `…-msvc` if your toolchain supports it).
+> For Windows: `x86_64-pc-windows-gnu` (or `…-msvc` if supported).
 
-### 3) (Legacy) Add a capability
+### 3) Add a capability (legacy “feature” flow)
 ```bash
-./keiros feature new --name "pivot"
-# Generates a stub and wires it into mod.rs (will become module generator soon)
+keiros feature new --name pivot
+# Generates src/features/pivot.rs and wires it into features/mod.rs
 ```
 
-### 4) Build
+### 4) (Optional) Auto-map features and generate a loader
 ```bash
-./keiros build   --profile linux_http   --teamserver-ip 10.0.0.5   --listener-port 8080
+keiros feature-map generate
+keiros loader generate
+# Produces feature_map.yml and src/feature_loader.rs
+```
+
+### 5) Build (Dockerized)
+```bash
+keiros build   --profile linux_http   --teamserver-ip 127.0.0.1   --listener-port 8080
 ```
 **Flags explained**
-- `--profile` → which YAML in `build_profiles/` to use
-- `--teamserver-ip`, `--listener-port` → baked into the agent’s comms config
+- `--profile` — name or path in `build_profiles/`  
+- `--teamserver-ip`, `--listener-port` — compiled into the agent’s comms config (used by HTTP/socket backends)
 
-### 5) Clean (Docker images/artifacts)
+### 6) Clean generated images/artifacts
 ```bash
-./keiros clean
-# Removes generated Docker images / build artifacts created by Keiros
+keiros clean                 # remove Keiros build images & artifacts
+keiros clean --dry-run       # show what would be removed
+keiros clean --all           # be aggressive (remove all keiros-* images)
+keiros clean --keep base,ci  # keep images prefixed with base or ci
 ```
 
-### 6) Run against a stub C2 (smoke test)
-- Start your C2 (or a stub that accepts register/poll routes).
-- Execute the built agent on a test host and confirm:
-  - it **registers** (ID, IP, hostname, status, protocol)
-  - it **polls** for tasks
-  - it **executes** a trivial task and **reports** the result
+### 7) Smoke-test with a tiny stub C2
+Use the ready-made doc and snippets:
 
-> If you don’t have a C2 handy, document a tiny stub (e.g., a simple HTTP handler with `/register` and `/poll`) in `docs/stubs/` so users can verify the beacon loop locally.
+- **Python (Flask)** and **Node.js (Express)** stubs implementing `/register`, `/poll`, `/report`, plus `/task` for operators.  
+- See: `docs/stubs/http_stub.md`
 
 ---
 
-## Command reference (concise)
+## Command Reference
 
 | Command | Purpose | Notes |
 |---|---|---|
-| `./keiros init --agent-name <name>` | Scaffold a new agent | Creates a Cargo bin project. |
-| `./keiros feature new --name <cap>` | (Legacy) add a capability | Will be replaced by module generator. |
-| `./keiros build --profile <p> --teamserver-ip <ip> --listener-port <port>` | Build an agent | Uses YAML profile; embeds comms config. |
-| `./keiros clean` | Clean generated Docker images/artifacts | Frees space; resets build environment. |
+| `keiros init --agent-name <name> [--no-cargo]` | Scaffold a new agent | Creates Cargo bin + Dockerfile for builds. |
+| `keiros feature new --name <cap>` | (Legacy) add a capability | Will be replaced by module generator. |
+| `keiros feature list` | List registered features | Inspects `src/features` and `Cargo.toml`. |
+| `keiros build --profile <p> --teamserver-ip <ip> --teamserver-port <port> --listener <communication protocol>` | Build an agent | Uses YAML profile; embeds comms config. |
+| `keiros clean [--dry-run] [--all] [--keep <prefixes>]` | Clean Docker images/artifacts | Frees disk and resets environment. |
 
 ---
 
-## Common pitfalls
+## First Build Checklist (Troubleshooting)
 
-- **“features vs modules”**: docs say “features”; it’s the legacy path. Migration is to modules. Call this out wherever the user has to choose.
-- **Cross-compile toolchains**: for `x86_64-unknown-linux-musl`, ensure the musl target and linker are installed (and available in Docker if you use the container flow).
-- **C2 mismatch**: your agent’s comms (HTTP/socket) must match what your C2 actually serves.
+1. **Docker daemon running?** Start Docker and ensure your user can access it.  
+2. **Targets available?** Docker builder includes common targets; local builds may require `rustup target add …`.  
+3. **Features vs modules?** `enabled_features` is legacy; module generator support is landing.  
+4. **C2 reachable?** Verify `--teamserver-ip / --listener-port` and test against the stub.  
+5. **Stripping/linkers** Ensure `strip` and appropriate linkers exist in the builder image (provided by default).
 
 ---
 
 ## Roadmap (High-Level)
 
-- ✅ Legacy feature system (current)
-- 🔄 **Module-based architecture** (in progress)
-- 🔧 Unified Docker workflows aligned with the new module system
-- 🧪 Test harness & example modules
-- 📚 Developer guide for custom modules & comms
+- Legacy feature system (current)  
+- **Module-based architecture** (in progress)  
+- Unified Docker workflows aligned with the new module system  
+- Test harness & example modules  
+- Developer guide for custom modules & comms
 
 ---
 
